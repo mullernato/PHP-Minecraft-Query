@@ -115,7 +115,11 @@ class MinecraftQuery
 
 	private function GetStatus( string $Challenge ) : void
 	{
+		$TimeStart = \microtime(true); // for read timeout purposes
+
 		$Data = $this->WriteData( self::STATISTIC, $Challenge . \pack( 'c*', 0x00, 0x00, 0x00, 0x00 ) );
+
+		$latency = \microtime(true) - $TimeStart;
 
 		if( !$Data )
 		{
@@ -174,6 +178,7 @@ class MinecraftQuery
 		$Info[ 'Players' ]    = (int)( $Info[ 'Players' ] ?? 0 );
 		$Info[ 'MaxPlayers' ] = (int)( $Info[ 'MaxPlayers' ] ?? 0 );
 		$Info[ 'HostPort' ]   = (int)( $Info[ 'HostPort' ] ?? 0 );
+		$Info['Latency']      = round($latency * 1000); // convert to ms
 
 		// Parse "plugins", if any
 		if( isset( $Info[ 'Plugins' ] ) )
@@ -220,12 +225,16 @@ class MinecraftQuery
 		$Command .= \pack( 'Q', 2 ); // 64bit guid
 		$Length  = \strlen( $Command );
 
+		$TimeStart = \microtime(true); // for read timeout purposes
+
 		if( $Length !== \fwrite( $this->Socket, $Command, $Length ) )
 		{
 			throw new MinecraftQueryException( "Failed to write on socket." );
 		}
 
 		$Data = \fread( $this->Socket, 4096 );
+
+		$latency = \microtime(true) - $TimeStart;
 
 		if( empty( $Data ) )
 		{
@@ -263,6 +272,7 @@ class MinecraftQuery
 			'IPv4Port'   => isset( $Data[ 10 ] ) ? (int)$Data[ 10 ] : 0,
 			'IPv6Port'   => isset( $Data[ 11 ] ) ? (int)$Data[ 11 ] : 0,
 			'Extra'      => $Data[ 12 ] ?? null, // What is this?
+			'Latency'    => round($latency * 1000) // convert to ms
 		];
 		$this->Players = null;
 	}
