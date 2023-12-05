@@ -105,6 +105,8 @@ class MinecraftPing
 
 		$Length = $this->ReadVarInt( ); // full packet length
 
+		$latency = \microtime(true) - $TimeStart;
+
 		if( $Length < 10 )
 		{
 			return false;
@@ -156,6 +158,8 @@ class MinecraftPing
 			return false;
 		}
 
+		$Data['latency'] = round($latency * 1000); // convert to ms
+
 		return $Data;
 	}
 
@@ -167,8 +171,12 @@ class MinecraftPing
 			throw new MinecraftPingException( 'Socket is not open.' );
 		}
 
+		$TimeStart = \microtime(true); // for read timeout purposes
+
 		\fwrite( $this->Socket, "\xFE\x01" );
 		$Data = \fread( $this->Socket, 512 );
+
+		$latency = \microtime(true) - $TimeStart;
 
 		if( empty( $Data ) )
 		{
@@ -195,24 +203,26 @@ class MinecraftPing
 		{
 			$Data = \explode( "\x00", $Data );
 
-			return Array(
+			return [
 				'HostName'   => $Data[ 3 ],
 				'Players'    => (int)$Data[ 4 ],
 				'MaxPlayers' => (int)$Data[ 5 ],
 				'Protocol'   => (int)$Data[ 1 ],
-				'Version'    => $Data[ 2 ]
-			);
+				'Version'    => $Data[ 2 ],
+				'Latency'    => round($latency * 1000) // convert to ms
+			];
 		}
 
 		$Data = \explode( "\xA7", $Data );
 
-		return Array(
+		return [
 			'HostName'   => \substr( $Data[ 0 ], 0, -1 ),
 			'Players'    => isset( $Data[ 1 ] ) ? (int)$Data[ 1 ] : 0,
 			'MaxPlayers' => isset( $Data[ 2 ] ) ? (int)$Data[ 2 ] : 0,
 			'Protocol'   => 0,
-			'Version'    => '1.3'
-		);
+			'Version'    => '1.3',
+			'Latency'    => round($latency * 1000) // convert to ms
+		];
 	}
 
 	private function ReadVarInt( ) : int
