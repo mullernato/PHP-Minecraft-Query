@@ -192,6 +192,10 @@ class MinecraftQuery
 			{
 				$Info[ 'Plugins' ] = \explode( "; ", $Data[ 1 ] );
 			}
+			else
+			{
+				$Info[ 'Plugins' ] = '';
+			}
 		}
 		else
 		{
